@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Modern Word Counter App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #6ee7b7, #3b82f6);
+            background-size: 400% 400%;
+            animation: gradientAnimation 15s ease infinite;
+        }
+
+        @keyframes gradientAnimation {
+            0% {
+                background-position: 0% 50%;
+            }
+
+            50% {
+                background-position: 100% 50%;
+            }
+
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        /* New card style */
+        .card {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Dark mode adjustments */
+        .dark .card {
+            background: rgba(31, 41, 55, 0.9);
+        }
+    </style>
+</head>
+
+<body class="min-h-screen flex items-center justify-center">
+
+    <!-- Main container -->
+    <div class="card p-8 max-w-xl w-full text-center text-gray-800 ">
+        <h1 class="text-3xl font-bold mb-4 text-black">Word Counter App</h1>
+
+        <div class="relative mb-6">
+            <textarea id="text-input" class="w-full h-40 p-4 border-2 border-gray-300 rounded-md focus:border-blue-500 transition duration-200"
+                placeholder="Paste your text here..."></textarea>
+            <button id="paste-btn"
+                class="absolute right-2 top-2 bg-blue-600 text-white p-2 rounded-full focus:outline-none transition duration-200 hover:bg-blue-500">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M16 2a2 2 0 012 2v3a1 1 0 01-1 1h-2v-.5a1.5 1.5 0 00-3 0v.5H8V6a1 1 0 00-1-1H5V4a2 2 0 012-2h9zm-4 7V8.5a.5.5 0 011 0V9h5a1 1 0 011 1v9a2 2 0 01-2 2H7a2 2 0 01-2-2V10a1 1 0 011-1h5z" />
+                </svg>
+            </button>
+        </div>
+
+        <!-- Display results -->
+        <h2 class="text-2xl font-semibold mb-4 text-black">Text Analysis</h2>
+        <div class="grid grid-cols-2 gap-4 mb-6">
+            <div class="card p-4 rounded-lg flex flex-col items-center">
+                <p class="text-gray-600">Words</p>
+                <p id="word-count" class="text-2xl font-bold text-green-600">0</p>
+            </div>
+            <div class="card p-4 rounded-lg flex flex-col items-center">
+                <p class="text-gray-600">Characters<br>(with spaces)</p>
+                <p id="char-count" class="text-2xl font-bold text-blue-600">0</p>
+            </div>
+            <div class="card p-4 rounded-lg flex flex-col items-center">
+                <p class="text-gray-600">Characters<br>(without spaces)</p>
+                <p id="char-count-no-space" class="text-2xl font-bold text-red-600">0</p>
+            </div>
+            <div class="card p-4 rounded-lg flex flex-col items-center">
+                <p class="text-gray-600">Sentences</p>
+                <p id="sentence-count" class="text-2xl font-bold text-purple-600">0</p>
+            </div>
+            <div class="card p-4 rounded-lg flex flex-col items-center">
+                <p class="text-gray-600">Paragraphs</p>
+                <p id="paragraph-count" class="text-2xl font-bold text-indigo-600">0</p>
+            </div>
+        </div>
+
+        <!-- Action buttons -->
+        <div class="flex justify-between mt-4">
+            <button id="clear-btn"
+                class="bg-red-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-red-500 transition duration-200">Clear</button>
+            <button id="download-btn"
+                class="bg-green-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-green-500 transition duration-200">Download
+                Text</button>
+            <button id="preview-btn"
+                class="bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-500 transition duration-200">Show
+                Preview</button>
+                <button id="copy-btn"
+                class="bg-yellow-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-yellow-400 transition duration-200">Copy
+                Text</button>
+        </div>
+
+        <!-- Text Preview Modal -->
+        <div id="text-preview-modal"
+            class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+            <div class="card p-6 max-w-lg w-full relative">
+                <button id="close-preview"
+                    class="absolute top-3 right-3 text-gray-700 bg-white p-1 rounded-full focus:outline-none transition duration-300">
+                    <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+                <h2 class="text-2xl font-semibold mb-4">Text Preview</h2>
+                <p id="preview-content" class="text-gray-800 whitespace-pre-wrap"></p>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // Selecting elements
+        const textInput = document.getElementById('text-input');
+        const wordCountDisplay = document.getElementById('word-count');
+        const charCountDisplay = document.getElementById('char-count');
+        const charCountNoSpaceDisplay = document.getElementById('char-count-no-space');
+        const sentenceCountDisplay = document.getElementById('sentence-count');
+        const paragraphCountDisplay = document.getElementById('paragraph-count');
+        const previewBtn = document.getElementById('preview-btn');
+        const previewModal = document.getElementById('text-preview-modal');
+        const previewContent = document.getElementById('preview-content');
+        const closePreviewBtn = document.getElementById('close-preview');
+        const clearBtn = document.getElementById('clear-btn');
+        const downloadBtn = document.getElementById('download-btn');
+        const pasteBtn = document.getElementById('paste-btn');
+        const copyBtn = document.getElementById('copy-btn');
+
+        // Function to analyze text
+        const analyzeText = () => {
+            const text = textInput.value.trim();
+            const words = text.match(/\b\S+\b/g) || [];
+            const sentences = text.match(/[^.!?]*[.!?]/g) || [];
+            const paragraphs = text.split(/\n+/).filter(p => p.trim().length > 0);
+
+            wordCountDisplay.textContent = words.length;
+            charCountDisplay.textContent = text.length;
+            charCountNoSpaceDisplay.textContent = text.replace(/\s/g, '').length;
+            sentenceCountDisplay.textContent = sentences.length;
+            paragraphCountDisplay.textContent = paragraphs.length;
+        };
+
+        // Show preview modal
+        previewBtn.addEventListener('click', () => {
+            const text = textInput.value.trim();
+            if (text.length > 0) {
+                previewContent.textContent = text;
+                previewModal.classList.remove('hidden');
+            }
+        });
+
+        // Close preview modal
+        closePreviewBtn.addEventListener('click', () => {
+            previewModal.classList.add('hidden');
+        });
+
+        // Clear input
+        clearBtn.addEventListener('click', () => {
+            textInput.value = '';
+            analyzeText();
+            previewModal.classList.add('hidden');
+        });
+
+        // Paste text functionality
+        pasteBtn.addEventListener('click', async () => {
+            try {
+                const text = await navigator.clipboard.readText();
+                textInput.value = text;
+                analyzeText();
+            } catch (err) {
+                alert('Failed to paste text: ' + err);
+            }
+        });
+
+        // Download text functionality
+        downloadBtn.addEventListener('click', () => {
+            const text = textInput.value.trim();
+            if (text) {
+                const blob = new Blob([text], { type: 'text/plain' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = 'text.txt';
+                link.click();
+            }
+        });
+
+        // Copy text functionality
+        copyBtn.addEventListener('click', async () => {
+            const text = textInput.value.trim();
+            if (text) {
+                try {
+                    await navigator.clipboard.writeText(text);
+                    alert('Text copied to clipboard!');
+                } catch (err) {
+                    alert('Failed to copy text: ' + err);
+                }
+            }
+        });
+
+        // Analyze text on input change
+        textInput.addEventListener('input', analyzeText);
+
+        // Initial analysis
+        analyzeText();
+    </script>
+
+</body>
+
+</html>
